@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        .container {
+            position: relative;
+        }
+        .container #glcanvas {
+            display: block;
+        }
+        .container #overlayText {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 14px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        body {
+            margin: 0;
+            overflow: hidden; /* scrollbar 제거 */
+        }
+    </style>
+    <title>Practice</title>
+</head>
+<body>
+    <div class="container">
+        <canvas id="glCanvas"></canvas>
+        <div id="overlayText">Use arrow keys to move the rectangle</div>
+    </div>
+    <script type="module" src="hw02.js"></script>
+</body>
+</html>
