@@ -1,14 +1,3 @@
-/*-------------------------------------------------------------------------
-07_LineSegments.js
-
-left mouse button을 click하면 선분을 그리기 시작하고, 
-button up을 하지 않은 상태로 마우스를 움직이면 임시 선분을 그리고, 
-button up을 하면 최종 선분을 저장하고 임시 선분을 삭제함.
-
-임시 선분의 color는 회색이고, 최종 선분의 color는 빨간색임.
-
-이 과정을 반복하여 여러 개의 선분 (line segment)을 그릴 수 있음. 
----------------------------------------------------------------------------*/
 import { resizeAspectRatio, setupText, updateText, Axes } from '../util/util.js';
 import { Shader, readShaderFile } from '../util/shader.js';
 
@@ -22,22 +11,15 @@ let positionBuffer; // 2D position을 위한 VBO (Vertex Buffer Object)
 let isDrawing = 0; // 원 중심 선택 -> 1 -> 원 두번째 점 선택 -> 2 -> 선분 점 1 선택 -> 3 -> 선분 점 2 선택 -> 4 
 let startPoint = null;  // mouse button을 누른 위치
 let tempEndPoint = null; // mouse를 움직이는 동안의 위치
-let line = []; // 그려진 선분들을 저장하는 array
-let circle = [];
+let line = []; // 그려진 선분을 저장하는 array
+let circle = []; // 그려진 원 위의 점들을 저장하는 array
 let circle_center = null;
 let radius = null;
-let textOverlay1; // 1st line segment 정보 표시
-let textOverlay2; // 2nd line segment 정보 표시
-let textOverlay3;
+let textOverlay1; // 원 정보 표시
+let textOverlay2; // 선분 정보 표시
+let textOverlay3; // 교점 정보 표시
 let axes = new Axes(gl, 0.85); // x, y axes 그려주는 object (see util.js)
-const CIRCLE_SEGMENTS = 360;
-// DOMContentLoaded event
-// 1) 모든 HTML 문서가 완전히 load되고 parsing된 후 발생
-// 2) 모든 resource (images, css, js 등) 가 완전히 load된 후 발생
-// 3) 모든 DOM 요소가 생성된 후 발생
-// DOM: Document Object Model로 HTML의 tree 구조로 표현되는 object model 
-// 모든 code를 이 listener 안에 넣는 것은 mouse click event를 원활하게 처리하기 위해서임
-// mouse input을 사용할 때 이와 같이 main을 call 한다. 
+const CIRCLE_SEGMENTS = 360; // 원 해상도 정보 ( 360개의 점으로 원을 그림 )
 
 document.addEventListener('DOMContentLoaded', () => {
     if (isInitialized) { // true인 경우는 main이 이미 실행되었다는 뜻이므로 다시 실행하지 않음
@@ -102,7 +84,7 @@ function setupMouseEvents() {
         const y = event.clientY - rect.top;   // canvas 내 y 좌표
         
         if (isDrawing == 0 || isDrawing == 2) { 
-            // 1번 또는 2번 선분을 그리고 있는 도중이 아닌 경우 (즉, mouse down 상태가 아닌 경우)
+            // 그리고 있지 않은 상태 (즉, mouse down 상태가 아닌 경우)
             // 캔버스 좌표를 WebGL 좌표로 변환하여 선분의 시작점을 설정
             let [glX, glY] = convertToWebGLCoordinates(x, y);
             startPoint = [glX, glY];
@@ -111,7 +93,7 @@ function setupMouseEvents() {
     }
 
     function handleMouseMove(event) {
-        if (isDrawing == 3) { // 1번 또는 2번 선분을 그리고 있는 도중인 경우
+        if (isDrawing == 3) { // 선분을 그리고 있는 도중인 경우
             const rect = canvas.getBoundingClientRect();
             const x = event.clientX - rect.left;
             const y = event.clientY - rect.top;
@@ -120,49 +102,35 @@ function setupMouseEvents() {
             tempEndPoint = [glX, glY]; // 임시 선분의 끝 point
             render();
         }
-        else if (isDrawing == 1){
+        else if (isDrawing == 1){ // 원을 그리고 있는 도중인 경우
             const rect = canvas.getBoundingClientRect();
             const x = event.clientX - rect.left;
             const y = event.clientY - rect.top;
             
             let [glX, glY] = convertToWebGLCoordinates(x, y);
             tempEndPoint = [glX, glY];
-            radius = Math.hypot(startPoint[0]-tempEndPoint[0],startPoint[1]-tempEndPoint[1]);
+            radius = Math.hypot(startPoint[0]-tempEndPoint[0],startPoint[1]-tempEndPoint[1]); // 2차원 거리 계산 함수
             circle = drawCircle(...startPoint,radius,CIRCLE_SEGMENTS);
             render();
         }
     }
 
     function handleMouseUp() {
-        if (isDrawing == 1 && tempEndPoint) {
-
-            // lines.push([...startPoint, ...tempEndPoint])
-            //   : startPoint와 tempEndPoint를 펼쳐서 하나의 array로 합친 후 lines에 추가
-            // ex) lines = [] 이고 startPoint = [1, 2], tempEndPoint = [3, 4] 이면,
-            //     lines = [[1, 2, 3, 4]] 이 됨
-            // ex) lines = [[1, 2, 3, 4]] 이고 startPoint = [5, 6], tempEndPoint = [7, 8] 이면,
-            //     lines = [[1, 2, 3, 4], [5, 6, 7, 8]] 이 됨
-            radius = Math.hypot(startPoint[0]-tempEndPoint[0],startPoint[1]-tempEndPoint[1]);            circle = drawCircle(...startPoint,radius,CIRCLE_SEGMENTS);
+        if (isDrawing == 1 && tempEndPoint) { // 원을 그린 경우
+            radius = Math.hypot(startPoint[0]-tempEndPoint[0],startPoint[1]-tempEndPoint[1]);            
+            circle = drawCircle(...startPoint,radius,CIRCLE_SEGMENTS);
 
             updateText(textOverlay1, "Circle: center (" + startPoint[0].toFixed(2) + ", " + startPoint[1].toFixed(2) + 
                 ") radius = " + radius.toFixed(2));
-            
+
             isDrawing++;
-            circle_center = startPoint;
+            circle_center = startPoint; // 원 중심 정보 저장
             startPoint = null;
             tempEndPoint = null;
             render();
         }
-        else if (isDrawing == 3 && tempEndPoint){
-            
-            // lines.push([...startPoint, ...tempEndPoint])
-            //   : startPoint와 tempEndPoint를 펼쳐서 하나의 array로 합친 후 lines에 추가
-            // ex) lines = [] 이고 startPoint = [1, 2], tempEndPoint = [3, 4] 이면,
-            //     lines = [[1, 2, 3, 4]] 이 됨
-            // ex) lines = [[1, 2, 3, 4]] 이고 startPoint = [5, 6], tempEndPoint = [7, 8] 이면,
-            //     lines = [[1, 2, 3, 4], [5, 6, 7, 8]] 이 됨
-
-            line = [...startPoint, ...tempEndPoint] 
+        else if (isDrawing == 3 && tempEndPoint){ // 선분을 그린 경우
+            line = [...startPoint, ...tempEndPoint];
 
             updateText(textOverlay2, "Line segment: (" + line[0].toFixed(2) + ", " + line[1].toFixed(2) + 
                 ") ~ (" + line[2].toFixed(2) + ", " + line[3].toFixed(2) + ")");
@@ -174,7 +142,19 @@ function setupMouseEvents() {
         }
     }
 
-    function drawCircle(cx,cy,radius,n){
+    
+
+    canvas.addEventListener("mousedown", handleMouseDown);
+    canvas.addEventListener("mousemove", handleMouseMove);
+    canvas.addEventListener("mouseup", handleMouseUp);
+}
+
+// 원주 위의 점 좌표의 array를 생성해주는 함수
+// cx : 중심의 x 좌표
+// cy : 중심의 y 좌표
+// radius : 반지름
+// n : 점 개수, 높을수록 촘촘하게 그려짐.
+function drawCircle(cx,cy,radius,n){
         const circle_vertices = [];
         for (let i=0; i<=n;i++){
             const theta = i / n * Math.PI * 2;
@@ -183,13 +163,10 @@ function setupMouseEvents() {
             circle_vertices.push(x,y);
         }
         return new Float32Array(circle_vertices);
-    }
-
-    canvas.addEventListener("mousedown", handleMouseDown);
-    canvas.addEventListener("mousemove", handleMouseMove);
-    canvas.addEventListener("mouseup", handleMouseUp);
 }
 
+// 교점 계산하는 함수
+// 교점을 리스트에 담아서 반환
 function calculateIntersection(){
     let intersections = [];
     let a = line[2] - line[0];
@@ -227,40 +204,42 @@ function render() {
 
     shader.use();
     
-    // 저장된 선들 그리기
-    
-    if (isDrawing==1&& circle){
+    // 원 그리기
+    if (isDrawing==1&& circle){ // 임시 원 그리기
         shader.setVec4("u_color", [0.5, 0.5, 0.5, 1.0]);
         gl.bufferData(gl.ARRAY_BUFFER, circle, gl.STATIC_DRAW);
         gl.bindVertexArray(vao);
         gl.drawArrays(gl.LINE_LOOP, 0, CIRCLE_SEGMENTS);
-    } else if (isDrawing>=2&& circle){
+    } else if (isDrawing>=2&& circle){ // 완성된 원 그리기
         shader.setVec4("u_color", [1.0, 0.0, 1.0, 1.0]);
         gl.bufferData(gl.ARRAY_BUFFER, circle, gl.STATIC_DRAW);
         gl.bindVertexArray(vao);
         gl.drawArrays(gl.LINE_LOOP, 0, CIRCLE_SEGMENTS);
     }
-    if (isDrawing==3 && startPoint && tempEndPoint) {
-        shader.setVec4("u_color", [0.5, 0.5, 0.5, 1.0]); // 임시 선분의 color는 회색
+
+    // 선분 그리기
+    if (isDrawing==3 && startPoint && tempEndPoint) { // 임시 선분 그리기
+        shader.setVec4("u_color", [0.5, 0.5, 0.5, 1.0]); 
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([...startPoint, ...tempEndPoint]), gl.STATIC_DRAW);
         gl.bindVertexArray(vao);
         gl.drawArrays(gl.LINES, 0, 2);
-    } else if (isDrawing>=4&&line){
+    } else if (isDrawing>=4&&line){ // 완성된 선분 그리기
         shader.setVec4("u_color", [0.3, 0.3, 0.8, 1.0]);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(line), gl.STATIC_DRAW);
         gl.bindVertexArray(vao);
         gl.drawArrays(gl.LINES, 0, 2);
 
+        // 교점 그리기
         let points = calculateIntersection();
-        if (points.length == 0){
+        if (points.length == 0){ // 교점 없음
             textOverlay3 = setupText(canvas, "No intersection", 3);
-        } else if (points.length == 1){
+        } else if (points.length == 1){ // 교점 1개
             textOverlay3 = setupText(canvas, "Intersection Points: 1 Point 1: ("+points[0][0].toFixed(2)+", "+points[0][1].toFixed(2)+")", 3);
             shader.setVec4("u_color", [1.0, 1.0, 0.0, 1.0]);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(points[0]), gl.STATIC_DRAW);
             gl.bindVertexArray(vao);
             gl.drawArrays(gl.POINTS, 0, 1);
-        } else{
+        } else{ // 교점 2개
             textOverlay3 = setupText(canvas, "Intersection Points: 2 Point 1: ("+points[0][0].toFixed(2)+", "+points[0][1].toFixed(2)+") Point 2: ("+points[1][0].toFixed(2)+", "+points[1][1].toFixed(2)+")", 3);
             shader.setVec4("u_color", [1.0, 1.0, 0.0, 1.0]);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([...points[0],...points[1]]), gl.STATIC_DRAW);
@@ -296,6 +275,8 @@ async function main() {
         // 텍스트 초기화
         textOverlay1 = setupText(canvas, "", 1);
         textOverlay2 = setupText(canvas, "", 2);
+        textOverlay3 = setupText(canvas, "", 2);
+
         
         // 마우스 이벤트 설정
         setupMouseEvents();
