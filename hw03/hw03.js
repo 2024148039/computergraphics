@@ -294,8 +294,8 @@ async function main() {
         shader.use();
 
         // 텍스트 초기화
-        textOverlay1 = setupText(canvas, "No line segment", 1);
-        textOverlay2 = setupText(canvas, "Click mouse button and drag to draw circle", 2);
+        textOverlay1 = setupText(canvas, "", 1);
+        textOverlay2 = setupText(canvas, "", 2);
         
         // 마우스 이벤트 설정
         setupMouseEvents();
