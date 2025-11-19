@@ -14,13 +14,12 @@ scene.add(camera);
 let orbitControls = initOrbitControls(camera, renderer);
 const stats = initStats();
 
-const light = new THREE.DirectionalLight(0xffffff, 3);
-light.position.set(10, 20, 10);
-scene.add(light);
-
 const ambientLight = new THREE.AmbientLight(0x404040);
 scene.add(ambientLight);
 
+const light = new THREE.DirectionalLight(0xffffff, 1);
+light.position.set(10, 20, 10);
+scene.add(light);
 
 const textureLoader = new THREE.TextureLoader();
 
@@ -35,6 +34,7 @@ const Mercury = new THREE.SphereGeometry(1.5, 20, 20)
 const MercuryMesh = addGeometry(scene, Mercury,
                         textureLoader.load('Mercury.jpg'));
 MercuryMesh.position.x = 20;
+MercuryMesh.color = 0xa6a6a6;
 MercuryMesh.castShadow = true;
 
 
@@ -42,18 +42,21 @@ const Venus = new THREE.SphereGeometry(3, 20, 20)
 const VenusMesh = addGeometry(scene, Venus,
                         textureLoader.load('Venus.jpg'));
 VenusMesh.position.x = 35;
+VenusMesh.color = 0xe39e1c;
 VenusMesh.castShadow = true;    
 
 const Earth = new THREE.SphereGeometry(3.5, 20, 20)
 const EarthMesh = addGeometry(scene, Earth,
                         textureLoader.load('Earth.jpg'));
 EarthMesh.position.x = 50;
+EarthMesh.color = 0x3498db;
 EarthMesh.castShadow = true;
 
 const Mars = new THREE.SphereGeometry(2.5, 20, 20)
 const MarsMesh = addGeometry(scene, Mars,
                         textureLoader.load('Mars.jpg'));
 MarsMesh.position.x = 65;
+MarsMesh.color = 0xc0392b;
 MarsMesh.castShadow = true;
 
 const gui = new GUI();
@@ -98,7 +101,7 @@ const CameraParams = {
 };
 
 folderCamera.add(CameraParams, 'switchCamera').name('Switch Camera');
-folderCamera.add(CameraParams, 'perspective').listen();
+folderCamera.add(CameraParams, 'perspective').name('Current Camera').listen();
 
 const folderMercury = gui.addFolder('Mercury');
 const mercuryParams = {

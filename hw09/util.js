@@ -662,11 +662,11 @@ export function computeNormalsGroup(group) {
 }
 
 export function addGeometry(scene, geom, texture) {
-    var mat = new THREE.MeshStandardMaterial(
+    var mat = new THREE.MeshLambertMaterial(
       {
         map: texture,
-        metalness: 0.2,
-        roughness: 0.07
+        // metalness: 0,
+        // roughness: 0
     });
     var mesh = new THREE.Mesh(geom, mat);
     mesh.castShadow = true;
