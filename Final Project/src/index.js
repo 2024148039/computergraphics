@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Player } from './objects/player.js';
+import { Player } from './objects/Player.js';
 import { Spotlight } from './objects/Spotlight.js';
 import { GameManager } from './core/GameManager.js';
 import { MapLoader } from './core/MapLoader.js';
